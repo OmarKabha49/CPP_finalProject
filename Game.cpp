@@ -16,7 +16,7 @@ Game::Game() : currentPlayerIndex(0), numberOfPlayers(0), currentPlayerInputInde
     loadBoardTexture();  // Load board texture
     loadFont();          // Load fonts
 
-    window.create(VideoMode(1500, 1000), "MONOPOLY");
+    window.create(VideoMode(1500, 1000), "MONOPOLY", Style::Titlebar | Style::Close);
     window.setFramerateLimit(60);  // Limit frame rate
 
     addButton("Roll Dice", 800, 0, 100, 50);  // Add the test button
