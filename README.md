@@ -14,29 +14,38 @@ To compile and run the game, you can use the following commands:
 
 # Game Instructions
 
+# the game GUI look like this:- 
+![Screenshot_2024-10-01_15_07_02](https://github.com/user-attachments/assets/429005b1-2f7f-44d9-ac15-76aa3b609401)
+
+
 Once the game starts, you can follow these steps to play:
 
 ## Enter the Number of Players:
 - Move your mouse to the **text input bar** located at the bottom of the window.
-- Click inside the text bar to focus on it.
+- ![WhatsApp Image 2024-10-01 at 21 54 36](https://github.com/user-attachments/assets/6d717e29-e076-4d22-a9b0-9750fc9e0d54)
+
 - Type the number of players (between **2 to 8**).
+-  ![WhatsApp Image 2024-10-01 at 21 54 36 (1)](https://github.com/user-attachments/assets/d3a3ae8c-10c2-4e3b-affa-510ba4717f2e)
 - Press **Enter** to confirm.
 
 ## Enter Player Names:
 - After entering the number of players, you will be prompted to enter names for each player one by one.
 - Move your mouse back to the **text input bar**, click to focus, and type the name for each player.
 - Press **Enter** after typing each name to proceed to the next player.
+- ![WhatsApp Image 2024-10-01 at 21 54 37](https://github.com/user-attachments/assets/90b2c4bc-43ef-43e2-a869-a1936bb2f718)
+
 
 ## Rolling the Dice:
 - Once all players are added, click the **"Roll Dice"** button to roll the dice for the current player.
-- The dice result will be displayed in the **console log** on the right.
+![WhatsApp Image 2024-10-01 at 21 54 37 (1)](https://github.com/user-attachments/assets/65d731ac-ed8c-4e65-8904-bf0d11671378)
+
 
 ## Move the Player:
 - After rolling the dice, move the current player by **left-clicking on the game board** to adjust their position based on the dice result.
 - Press **Enter** to confirm the move.
 
 ## Check the Console:
-- The **console log** will display information about the game, such as:
+- The **console of the VS or Clion** will display information about the game, such as:
   - The current player's turn.
   - Dice results.
   - Player movements.
