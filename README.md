@@ -7,10 +7,9 @@
 To compile and run the game, you can use the following commands:
 
 ### Build the Project
-
-## make
-## make run
-## make clean
+- make
+- make run
+- make clean
 
 
 # Game Instructions
