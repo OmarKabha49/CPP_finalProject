@@ -11,6 +11,7 @@ To compile and run the game, you can use the following commands:
 make
 make run
 make clean
+```bash
 
 # Game Instructions
 
