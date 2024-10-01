@@ -1,4 +1,6 @@
 # Monopoly Game
+## befor starting try to maximaize to full screen
+![WhatsApp Image 2024-10-01 at 21 54 35](https://github.com/user-attachments/assets/9a543efe-57a9-408a-8548-32f4fc2f6f17)
 
 ## How to Run the Game
 
