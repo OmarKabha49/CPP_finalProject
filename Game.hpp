@@ -11,6 +11,11 @@ using namespace sf;
 using namespace std;
 class Game {
 private:
+    // Singleton instance
+    static Game* instance;
+    // Private constructor to prevent instantiation
+    Game();
+
     RenderWindow window;
     Sprite monopolyBoard;
     Texture monopolyTexture;
@@ -19,7 +24,7 @@ private:
     string inputBuffer;
     vector<Text> consoleLog;
     RectangleShape consoleBar;
-    const int maxConsoleLogLines = 10;
+    const int maxConsoleLogLines = 13;
     vector<Player> players;
     int currentPlayerIndex;
     RectangleShape button;
@@ -35,12 +40,14 @@ private:
     bool isWaitingForPlayerCount; // True if waiting for the number of players
     bool isWaitingForPlayerNames; // True if waiting for player names
     bool waitingForInput = false;
+    bool waitingForPlayerDecision;
+    bool turnPrompted;
     function<void(const string&)> inputCallback;
 
 
 public:
-    Game();
-
+    // Static method to access the singleton instance
+    static Game* getInstance();
     void run(); // Main game loop
     void initializeGame(); // Initialize players and board
     void handleEvents(); // Handle user input
@@ -55,6 +62,7 @@ public:
     void drawPlayerInfo();
     void drawCurrentPlayerTurn();
     void printMousePosition();
+    vector<Player> getPlayers();
 
     // Helper functions
     void loadBoardTexture(); // Load the board image
@@ -68,8 +76,10 @@ public:
     void updateConsoleLog(const string& message);
     void processInput(const string& input);
     void initializeTextInputAndConsoleLog();
-    void waitForInput(function<void(const std::string&)> callback);
+    void waitForInput(function<void(const string&)> callback, const string& prompt);
 
+    void handleJailTurn(Player* player);
+    void updateCurrentPlayer();
 };
 
 #endif // GAME_HPP
