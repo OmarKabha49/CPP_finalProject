@@ -1,6 +1,9 @@
 #include "Street.hpp"
 #include <iostream>
 
+#include "Game.hpp"
+#include "Logger.hpp"
+
 Street::Street(const string &Color, int position, int price, int baseRent,int housePrice, int hotelPrice)
     : Tile(Color, position), price(price), baseRent(baseRent), housePrice(housePrice), hotelPrice(hotelPrice) {
 
@@ -33,6 +36,11 @@ int Street::getHouses() const {
     return houses;
 }
 
+bool Street::getHotel() const {
+    return hotel;
+}
+
+
 int Street::getHousePrice() {
     return housePrice;
 }
@@ -62,34 +70,42 @@ bool Street::buildHotel() {
     return false;
 }
 
-void Street::onLand(Player *player) {
-    if(getOwner() == nullptr) {
-        while (true) {
-            cout << player->getName() << ", do you want to buy the " <<
-                getColor() << " street at position " << getPosition() << " it cost : " << getPrice() << " (y/n):";
+void Street::onLand(Player* player) {
+    if(this->owner == nullptr) {
+        string outPut = player->getName() + ", do you want to buy " + getName() + " for $" + to_string(getPrice()) + "? (y/n)";
 
-            char choice;
-            cin >> choice;
-            if(choice == 'y' || choice == 'Y') {
-                if(player->getBalance() < this->price) {
-                    cout << "you dont have enoght money" << endl;
-                    break;
+        function<void(const string&)> promptPlayer;
+
+        promptPlayer = [this, player](const string& input) {
+            Logger::log(input);
+            char choice = tolower(input[1]);
+            if (choice == 'y') {
+                if (player->getBalance() < this->price) {
+                    Logger::log("You don't have enough money to buy this property.");
+                } else {
+                    player->buyStreet(this);
+                    Logger::log(player->getName() + " bought " + getName() + " for $" + to_string(getPrice()) + ".");
                 }
-                player->buyStreet(this);
-                break;
-            }
-            else if(choice == 'n' ||  choice == 'N') {
-                break;
-            }
-            else{cout << "Invalid input. Please enter  y/Y or n/N" << endl;}
-        }
+            } else if (choice == 'n') {
+                Logger::log(player->getName() + " decided not to buy " + getName() + ".");
 
+            }
+            else {
+                Logger::log("Invalid input. Please enter 'y' or 'n'.");
+                onLand(player);
+            }
+        };
+        Game::getInstance()->waitForInput(promptPlayer,outPut);
     }
-
-    else if(getOwner() != player) {
+    else if(owner != player){
         int rent = getRent();
         player->decreaseBalance(rent);
-        cout<<player->getName()<< " paid : " << rent << " to " << getOwner()->getName() << endl;
-        getOwner()->increaseBalance(rent);
+        owner->increaseBalance(rent);
+        string message = player->getName() + " paid $" + to_string(rent) +
+                              " to " + getOwner()->getName() + " as rent.";
+        Logger::log(message);
+    }
+    else {
+        Logger::log(player->getName() + " landed on their own property.");
     }
 }
