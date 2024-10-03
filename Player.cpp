@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "Logger.hpp"
 #include "Street.hpp"
 #include "Train.hpp"
 #include "Utility.hpp"
@@ -20,7 +21,7 @@ unordered_map<string, int> colorGroupStreetCount = {
 
 
 Player::Player(const string name)
-    : playerName(name), balance(1500), inJail(false), turnsInJail(0), getOutOfJailFreeCards(0), position(0) {}
+    : playerName(name), balance(1500), inJail(false), jailTurns(0), getOutOfJailFreeCards(0), position(0) ,doubleRollCount(0), housesNum(0), hotelNum(0){}
 
 // Getters
 const string& Player::getName() const { return playerName; }
@@ -36,7 +37,7 @@ const CircleShape& Player::getPlayerToken() const { return playerToken; }
 // Other Methods
 void Player::decreaseBalance(int amount) { balance -= amount; }
 void Player::increaseBalance(int amount) { balance += amount; }
-void Player::goToJail() { inJail = true; }
+
 
 void Player::payRent(int amount, Player* owner) {
     decreaseBalance(amount);
@@ -82,14 +83,53 @@ void Player::buyUtility(Utility* utilityTile) {
     }
 }
 
-void Player::move(int steps) { position = (position + steps) % 40; }
+void Player::move(int steps) {
+    if (isInJail()) {
+        Logger::log("Player " + getName() + " is in jail and cannot move.");
+        return; // No movement allowed when in jail
+    }
+    position = (position + steps) % 40;
+    Logger::log("Player " + getName() + " moved to position " + to_string(position));
+}
+
 void Player::setPosition(float x, float y) { playerToken.setPosition(x, y); }
 void Player::setPlayerToken(const CircleShape& token) { playerToken = token; }
 
-void Player::releaseFromJail() { inJail = false; turnsInJail = 0; }
-void Player::incrementTurnsInJail() { turnsInJail++; }
-int Player::getTurnsInJail() const { return turnsInJail; }
+void Player::goToJail() {
+    inJail = true;
+    jailTurns = 0;
+    doubleRollCount = 0; // Reset double roll count if they go to jail.
+}
+
+void Player::releaseFromJail() {
+    inJail = false;
+    jailTurns = 0;
+}
+
+void Player::incrementTurnsInJail() { jailTurns++; }
+int Player::getTurnsInJail() const { return jailTurns; }
 bool Player::isInJail() const { return inJail; }
+
+void Player::resetDoubleRollCount() {
+    doubleRollCount = 0;
+}
+
+void Player::incrementDoubleRollCount() {
+    doubleRollCount++;
+}
+
+int Player::getDoubleRollCount() const {
+    return doubleRollCount;
+}
+
+bool Player::useGetOutOfJailFreeCard() {
+    if (getOutOfJailFreeCards > 0) {
+        getOutOfJailFreeCards--;
+        releaseFromJail();
+        return true;
+    }
+    return false;
+}
 
 Vector2f Player::getTileScreenPosition(int tilePosition) const {
     switch (tilePosition) {
@@ -203,4 +243,35 @@ bool Player::canBuildHouseOnGroup(const string &color) const {
     return true;
 }
 
+
+
+int Player::getHousesNume(){
+    for (const auto& street : streets) {
+        housesNum += street->getHouses();
+    }
+    return housesNum;
+}
+
+int Player::getHotelesNum() {
+    for (const auto& street : streets) {
+        hotelNum += street->getHotel();
+    }
+    return hotelNum;
+}
+
+void Player::repairProperties(int perHouse, int perHotel) {
+    for (int i = 0 ; i < hotelNum; i++) {
+        decreaseBalance(perHotel);
+    }
+    for(int i = 0; i < housesNum; i++) {
+        decreaseBalance(perHouse);
+    }
+
+    if(hotelNum > 0){Logger::log(getName() + " paid "+ to_string(perHotel)+ " " + to_string(hotelNum) + " times.");}
+    if(housesNum > 0){Logger::log(getName() + " paid " +to_string(perHouse)+ " " +to_string(housesNum) + " times.");}
+}
+
+void Player::increasGetOutOfJailFreeCard() {
+    getOutOfJailFreeCards++;
+}
 
