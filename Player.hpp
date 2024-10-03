@@ -23,9 +23,12 @@ private:
     vector<Train*> trains;   // Trains owned by the player.
     vector<Utility*> utilities;  // Utilities owned by the player.
     bool inJail; // Flag to indicate if the player is in jail.
-    int turnsInJail; // Number of turns the player has been in jail
+    int jailTurns; // Number of turns the player has been in jail
     int getOutOfJailFreeCards; // Number of "Get Out of Jail Free" cards the player has.
     int position;
+    int doubleRollCount;
+    int housesNum;
+    int hotelNum;
     CircleShape playerToken;
     unordered_map<Street*, CircleShape> _streets;
     unordered_map<Utility*, CircleShape> _utilityies;
@@ -66,6 +69,17 @@ public:
     bool buildHouse(Street* street);
     bool canBuildHouseOnGroup(const string& colorGroup) const;
     bool ownsAllTheStreetsInSameColor(const string& colorGroup) const;
+
+    void resetDoubleRollCount();
+    void incrementDoubleRollCount();
+    int getDoubleRollCount() const;
+    bool useGetOutOfJailFreeCard();
+
+    int getHousesNume();
+    int getHotelesNum();
+
+    void repairProperties(int perHouse, int perHotel);
+    void increasGetOutOfJailFreeCard();
 
     bool operator==(Player& other) const {
         return this->playerName == other.playerName;
