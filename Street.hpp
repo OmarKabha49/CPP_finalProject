@@ -31,6 +31,7 @@ public:
     const string& getColor() const;
     int getPrice() const;
     int getHouses() const;
+    bool getHotel() const;
     int getHousePrice();
 
     void onLand(Player *player) override;
