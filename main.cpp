@@ -1,7 +1,7 @@
 #include "Game.hpp"
 
 int main() {
-    Game game;
-    game.run();
+    Game* game = Game::getInstance();
+    game->run();
     return 0;
 }
