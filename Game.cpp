@@ -9,6 +9,25 @@ int dice1Result = 0;
 int dice2Result = 0;
 int numberOfClicksOnButton = 0 ;// each player can roll dice once
 
+// Initialize the static instance pointer
+Game* Game::instance = nullptr;
+
+// Singleton access method
+Game* Game::getInstance() {
+    if (instance == nullptr) {
+        instance = new Game();
+    }
+    return instance;
+}
+
+vector<Player> Game::getPlayers() {
+    return players;
+}
+
+void Game::updateCurrentPlayer() {
+    currentPlayerIndex--;
+}
+
 // Constructor without initializing the window
 Game::Game() : currentPlayerIndex(0), numberOfPlayers(0), currentPlayerInputIndex(0),
                isWaitingForPlayerCount(true), isWaitingForPlayerNames(false) {
@@ -175,9 +194,10 @@ void Game::handleEvents() {
     Event event;
     while (window.pollEvent(event)) {
         handleWindowClose(event);
+        handleTextInput(event);
         handleKeyPress(event);
         handleMousePress(event);
-        handleTextInput(event);
+
     }
 }
 
@@ -236,6 +256,62 @@ void Game::drawPlayers() {
     }
 }
 
+void Game::handleJailTurn(Player *player) {
+    string jailMessage = player->getName() + " is in jail! Choose an action: ";
+    jailMessage += "(1) Pay $50, (2) Roll for doubles, (3) Use 'Get Out of Jail Free' card";
+     // Prompt the player for input
+    function jailOptions = [this, player](const string& input) {
+        int choice = std::stoi(input);
+        switch (choice) {
+            case 1: // Pay $50 to get out
+                if (player->getBalance() >= 50) {
+                    player->decreaseBalance(50);
+                    player->releaseFromJail();
+                    updateConsoleLog(player->getName() + " paid $50 and is out of jail!");
+                } else {
+                    updateConsoleLog(player->getName() + " doesn't have enough money to pay.");
+                }
+                break;
+
+            case 2: // Try rolling doubles
+                numberOfClicksOnButton = 0;
+                if (dice1Result == dice2Result) {
+                    player->releaseFromJail();
+                    updateConsoleLog(player->getName() + " rolled doubles and is out of jail!");
+                } else {
+                    player->incrementTurnsInJail();
+                    updateConsoleLog(player->getName() + " failed to roll doubles.");
+                    if (player->getTurnsInJail() >= 3) {
+                        player->releaseFromJail();
+                        updateConsoleLog(player->getName() + " is released from jail after 3 turns.");
+                    }
+                }
+                break;
+
+            case 3: // Use "Get Out of Jail Free" card
+                if (player->useGetOutOfJailFreeCard()) {
+                    updateConsoleLog(player->getName() + " used a 'Get Out of Jail Free' card and is out of jail!");
+                } else {
+                    updateConsoleLog(player->getName() + " doesn't have a 'Get Out of Jail Free' card.");
+                }
+                break;
+
+            default:
+                updateConsoleLog("Invalid option. Please choose again.");
+                handleJailTurn(player); // Re-prompt for valid input
+                return;
+        }
+
+        // End the player's turn if they are still in jail after 3 turns.
+        if (!player->isInJail()) {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+        }
+    };
+
+    // Show the jail options and wait for input
+    waitForInput(jailOptions, jailMessage);
+}
+
 void Game::addButton(const string& label, float x, float y, float width, float height) {
     // Create the button shape
     button.setSize(Vector2f(width, height));
@@ -262,7 +338,7 @@ void Game::movePlayer() {
 }
 
 void Game::loadBoardTexture() {
-    if (!monopolyTexture.loadFromFile("monopoly.jpg")) {
+    if (!monopolyTexture.loadFromFile("/home/kali/Desktop/untitled/monopoly.jpg")) {
         cerr << "Error loading the Monopoly board image." << endl;
         return;
     }
@@ -271,7 +347,7 @@ void Game::loadBoardTexture() {
 
 void Game::loadFont() {
     // Load the font for button text
-    if (!font.loadFromFile("arial.ttf")) {
+    if (!font.loadFromFile("/home/kali/Desktop/untitled/arial.ttf")) {
         cerr << "Error loading font." << endl;
     }
 }
@@ -302,7 +378,11 @@ void Game::handleKeyPress(Event& event) {
         monopolyBounds.contains(static_cast<float>(mousePosition.x),static_cast<float>(mousePosition.y))) {
         if (event.key.code == Keyboard::Enter) {
             handlePlayerLanding(&players[currentPlayerIndex]);
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+
+            if (!players[currentPlayerIndex].isInJail()) {
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.size(); // Move to next player
+            }
+
             dice1Result = 0;
             dice2Result = 0;
             numberOfClicksOnButton = 0;
@@ -337,6 +417,7 @@ void Game::handleMousePress(Event& event) {
             diceText2.setString("Dice 2: " + to_string(dice2));
 
             players[currentPlayerIndex].move(dice1Result + dice2Result);
+            if(players[currentPlayerIndex].getPosition() == 10){currentPlayerIndex = (currentPlayerIndex + 1) % players.size();}
 
         } else if (monopolyBounds.contains(static_cast<float>(mousePosition.x), static_cast<float>(mousePosition.y)) ){
             // Move the current player
@@ -405,6 +486,12 @@ void Game::drawCurrentPlayerTurn() {
 }
 
 void Game::handlePlayerLanding(Player *player) {
+    // Check if the player is in jail
+    if (player->isInJail()) {
+        handleJailTurn(player);
+        return; // Skip the rest of the logic since the player is in jail.
+    }
+
     Tile* currTile = board.getTile(player->getPosition());
 
 
@@ -420,6 +507,24 @@ void Game::handlePlayerLanding(Player *player) {
     }
     else if(dynamic_cast<SpecialTile*>(currTile)) {
         currTile->onLand(player);
+    }
+
+    // Handle double rolls
+    if (dice1Result == dice2Result) {
+        player->incrementDoubleRollCount();
+        updateConsoleLog(player->getName() + " rolled doubles! Rolling again.");
+        numberOfClicksOnButton = 0;
+
+        // Check for three consecutive doubles
+        if (player->getDoubleRollCount() == 3) {
+            player->goToJail();
+            updateConsoleLog(player->getName() + " rolled doubles three times and is sent to jail!");
+        } else {
+            // Give the player another turn
+            currentPlayerIndex--; // Let the player roll again.
+        }
+    } else {
+        player->resetDoubleRollCount(); // Reset double roll count if not doubles.
     }
 }
 
@@ -455,7 +560,6 @@ void Game::handleBuildingHouse(Vector2i mousePosition) {
             houseShape.setPosition(mousePositionFloat);
 
             housesOnTheBoard[players[currentPlayerIndex].getName()].push_back(houseShape);
-
 
             // Output the action for confirmation
             cout << "House built at (" << mousePositionFloat.x << ", " << mousePositionFloat.y << ") by " << players[currentPlayerIndex].getName() << endl;
@@ -512,12 +616,11 @@ void Game::handleTextInput(Event &event) {
     // Once Enter is pressed, process the input
     if (isTextEntered) {
         inputBuffer = tempInputBuffer;  // Move the accumulated buffer into inputBuffer
-        processInput(inputBuffer);  // Process the input
-        tempInputBuffer.clear();  // Clear the temporary buffer for the next input
-        inputText.setString("");  // Clear the displayed text
+        processInput(inputBuffer);      // Process the input
+        tempInputBuffer.clear();        // Clear the temporary buffer for the next input
+        inputText.setString("");        // Clear the displayed text
     }
 }
-
 
 void Game::updateConsoleLog(const string &message) {
     // If the number of log messages exceeds the limit, remove the first (oldest) entry
@@ -534,7 +637,7 @@ void Game::updateConsoleLog(const string &message) {
     // Create a new log entry
     Text logEntry;
     logEntry.setFont(font);  // Assuming 'font' is loaded
-    logEntry.setCharacterSize(20);
+    logEntry.setCharacterSize(15);
     logEntry.setFillColor(Color::White);
     logEntry.setString(message);
 
@@ -546,16 +649,20 @@ void Game::updateConsoleLog(const string &message) {
 }
 
 
-void Game::processInput(const string &input) {
+void Game::processInput(const string& input) {
     if (waitingForInput && inputCallback) {
-        inputCallback(input);
-        waitingForInput = false;
+        auto callback = inputCallback;  // Copy the callback
+        waitingForInput = false;        // Reset the flag before calling the callback
+        inputCallback = nullptr;        // Clear the callback to prevent re-use
+        callback(input);                // Invoke the callback with the input
     } else {
-        updateConsoleLog(input);  // Normal console input processing
+        updateConsoleLog("Input received : " + input);
     }
 }
 
-void Game::waitForInput(function<void(const string &)> callback) {
+void Game::waitForInput(function<void(const string&)> callback, const string& prompt) {
     waitingForInput = true;
     inputCallback = callback;
+    updateConsoleLog(prompt);
+    inputBuffer.clear();
 }
