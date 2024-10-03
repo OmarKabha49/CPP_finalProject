@@ -2,7 +2,8 @@
 #include "Train.hpp"
 
 #include <iostream>
-
+#include "Logger.hpp"
+#include "Game.hpp"
 #include "Player.hpp"
 
 Train::Train(const string &name, int position, int price)
@@ -40,34 +41,50 @@ int Train::getPrice() const {
 }
 
 void Train::onLand(Player *player) {
-    if(getOwner() == nullptr) {
-        while (true) {
-            cout << player->getName() << ", do you want to buy the " <<
-                getName() << " at position " << getPosition() << " it cost : " << getPrice() << " (y/n):";
+    if (this->owner == nullptr) {
+        // Message to prompt the player
+        string outPut = player->getName() + ", do you want to buy " + getName() +
+                        " at position " + to_string(getPosition()) + " for $" +
+                        to_string(getPrice()) + "? (y/n)";
 
-            char choice;
-            cin >> choice;
+        // Declare a lambda function to handle player's response
+        function<void(const string&)> promptPlayer;
 
-            if(choice == 'y' || choice == 'Y') {
-                if(player->getBalance() < this->price) {
-                    cout << "you dont have enoght money" << endl;
-                    break;
+        // Define the lambda function for processing the input
+        promptPlayer = [this, player, promptPlayer, outPut](const string& input) {
+            Logger::log("Input received: " + input);
+
+            char choice = tolower(input[1]);  // Handle first character of input
+
+            if (choice == 'y') {
+                if (player->getBalance() < this->price) {
+                    Logger::log("You don't have enough money to buy this train.");
+                } else {
+                    player->buyTrain(this);
+                    Logger::log(player->getName() + " bought " + getName() + " for $" + to_string(getPrice()) + ".");
                 }
-                player->buyTrain(this);
-                break;
+            } else if (choice == 'n') {
+                Logger::log(player->getName() + " decided not to buy the " + getName() + ".");
+            } else {
+                Logger::log("Invalid input. Please enter 'y' or 'n'.");
+                // Re-prompt without recursion
+                Game::getInstance()->waitForInput(promptPlayer, outPut);
             }
-            else if(choice == 'n' ||  choice == 'N') {
-                break;
-            }
-            else{cout << "Invalid input. Please enter  y/Y or n/N" << endl;}
-        }
+        };
 
-    }
+        // Prompt the player
+        Game::getInstance()->waitForInput(promptPlayer, outPut);
 
-    else if(getOwner() != player) {
+    } else if (this->owner != player) {
+        // Pay rent if the player lands on a train owned by another player
         int rent = getRent();
         player->decreaseBalance(rent);
-        cout<<player->getName()<< " paid : " << rent << " to " << getOwner()->getName() << endl;
-        getOwner()->increaseBalance(rent);
+        this->owner->increaseBalance(rent);
+        Logger::log(player->getName() + " paid $" + to_string(rent) +
+                    " to " + getOwner()->getName() + " as rent.");
+    } else {
+        // Player landed on their own train
+        Logger::log(player->getName() + " landed on their own train.");
     }
 }
+
