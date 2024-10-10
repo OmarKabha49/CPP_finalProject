@@ -1,0 +1,20 @@
+# ninja log v6
+52	3025	1728547483389079149	CMakeFiles/untitled.dir/main.cpp.o	800316bc11b194fd
+6	1036	1728536986163810697	CMakeFiles/untitled.dir/Board.cpp.o	9c111bcf457f7a20
+67	8697	1728547589369074966	CMakeFiles/untitled.dir/Player.cpp.o	7b5ada916769b108
+30	269	1728548431227368560	build.ninja	9fef901677cdd4b7
+8	81	1726412668783296775	CMakeFiles/untitled.dir/utility.cpp.o	ca6687b4a216e5db
+6	31	1726705572967704917	CMakeFiles/untitled.dir/Property.cpp.o	d0d43bc58ceedf74
+7	477	1727803825788744229	CMakeFiles/untitled.dir/Tile.cpp.o	9261ba9c49bc1627
+13	74	1726412668787296789	CMakeFiles/untitled.dir/street.cpp.o	6a690f3dd7df5c5
+14	130	1726412668787296789	CMakeFiles/untitled.dir/railRoad.cpp.o	3370eea2c4b9bdf1
+8	1439	1728537875510721418	CMakeFiles/untitled.dir/Street.cpp.o	e9dcd558ffa0e953
+8	1647	1728537875510721418	CMakeFiles/untitled.dir/SpecialTile.cpp.o	e29259c8bc108335
+49	7685	1728547448405080530	CMakeFiles/untitled.dir/Game.cpp.o	d2178aec07bdc8c3
+4	617	1726843767616790519	CMakeFiles/untitled.dir/X.cpp.o	9da394110d11a451
+1323	2472	1728537876822719768	CMakeFiles/untitled.dir/Utility.cpp.o	95e808e76ab285ab
+1457	1568	1726412670231301851	CMakeFiles/untitled.dir/chanceCard.cpp.o	5049a43572872bf
+8698	10638	1728547597997074625	untitled	65bef0a675456ae7
+8	1672	1728537875510721418	CMakeFiles/untitled.dir/Train.cpp.o	d69dd51db195b1a7
+55	235	1728547448409080530	CMakeFiles/untitled.dir/tests.cpp.o	151072294eb6942b
+1439	2430	1728537876938719622	CMakeFiles/untitled.dir/Logger.cpp.o	2632b9ddfbf8ed2d

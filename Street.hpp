@@ -32,7 +32,8 @@ public:
     int getPrice() const;
     int getHouses() const;
     bool getHotel() const;
-    int getHousePrice();
+    int getHousePrice() const;
+    int getHotelPrice() const;
 
     void onLand(Player *player) override;
 

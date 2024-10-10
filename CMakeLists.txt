@@ -17,8 +17,6 @@ add_executable(untitled
         Player.cpp
         Game.hpp
         Game.cpp
-        chanceCard.hpp
-        chanceCard.cpp
         Board.hpp
         SpecialTile.hpp
         SpecialTile.cpp
@@ -29,6 +27,9 @@ add_executable(untitled
         Utility.hpp
         Utility.hpp
         Utility.cpp
+        Logger.hpp
+        Logger.cpp
+        #tests.cpp
 )
 
 # Link SFML libraries

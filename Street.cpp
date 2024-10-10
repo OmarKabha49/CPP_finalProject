@@ -41,8 +41,12 @@ bool Street::getHotel() const {
 }
 
 
-int Street::getHousePrice() {
+int Street::getHousePrice() const{
     return housePrice;
+}
+
+int Street::getHotelPrice() const{
+    return hotelPrice;
 }
 
 bool Street::canBuildHouse(const Player * player) const {
@@ -99,11 +103,7 @@ void Street::onLand(Player* player) {
     }
     else if(owner != player){
         int rent = getRent();
-        player->decreaseBalance(rent);
-        owner->increaseBalance(rent);
-        string message = player->getName() + " paid $" + to_string(rent) +
-                              " to " + getOwner()->getName() + " as rent.";
-        Logger::log(message);
+        player->payRent(rent, owner);
     }
     else {
         Logger::log(player->getName() + " landed on their own property.");

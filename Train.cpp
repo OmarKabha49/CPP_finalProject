@@ -78,10 +78,7 @@ void Train::onLand(Player *player) {
     } else if (this->owner != player) {
         // Pay rent if the player lands on a train owned by another player
         int rent = getRent();
-        player->decreaseBalance(rent);
-        this->owner->increaseBalance(rent);
-        Logger::log(player->getName() + " paid $" + to_string(rent) +
-                    " to " + getOwner()->getName() + " as rent.");
+        player->payRent(rent,owner);
     } else {
         // Player landed on their own train
         Logger::log(player->getName() + " landed on their own train.");

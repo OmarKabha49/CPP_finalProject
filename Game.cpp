@@ -1,7 +1,7 @@
 #include "Game.hpp"
 #include <iostream>
-#include <limits>
-
+#include <thread>
+#include "Logger.hpp"
 #include "SpecialTile.hpp"
 
 
@@ -12,12 +12,18 @@ int numberOfClicksOnButton = 0 ;// each player can roll dice once
 // Initialize the static instance pointer
 Game* Game::instance = nullptr;
 
+
 // Singleton access method
 Game* Game::getInstance() {
     if (instance == nullptr) {
         instance = new Game();
     }
     return instance;
+}
+
+void Game::initcenarios() {
+    initializeGame1();
+    setupScenario1();
 }
 
 vector<Player> Game::getPlayers() {
@@ -30,17 +36,29 @@ void Game::updateCurrentPlayer() {
 
 // Constructor without initializing the window
 Game::Game() : currentPlayerIndex(0), numberOfPlayers(0), currentPlayerInputIndex(0),
-               isWaitingForPlayerCount(true), isWaitingForPlayerNames(false) {
+               isWaitingForPlayerCount(true), isWaitingForPlayerNames(false), isGameInitialized(false){
     srand(static_cast<unsigned int>(time(0)));  // Seed random number generator
     loadBoardTexture();  // Load board texture
     loadFont();          // Load fonts
 
+    //initcenarios();
     window.create(VideoMode(1500, 1000), "MONOPOLY", Style::Titlebar | Style::Close);
     window.setFramerateLimit(60);  // Limit frame rate
 
     addButton("Roll Dice", 800, 0, 100, 50);  // Add the test button
     addDiceResult();                          // Add dice text fields
     initializeTextInputAndConsoleLog();       // Initialize text input and console log areas
+
+
+    drawGame();  // Draw the game state in every frame
+}
+
+unordered_map<string, vector<RectangleShape>> Game::getHousesOnTheBoard() {
+    return housesOnTheBoard;
+}
+
+unordered_map<string, vector<ConvexShape>> Game::getHotelsOnTheBoard() {
+    return hotelsOnTheBoard;
 }
 
 void Game::run() {
@@ -48,7 +66,55 @@ void Game::run() {
 
     while (window.isOpen()) {
         handleEvents();  // Handle input events (e.g., typing, mouse clicks)
+        if(gameOver()) {
+            // Custom messages for each second
+            std::vector<std::string> messages = {
+                "Closing in 5 seconds...",
+                "Get ready to exit!",
+                "Closing in 3 seconds...",
+                "Hope you enjoyed the game!",
+                "Closing in 1 second..."
+            };
 
+            // Start the countdown
+            int countdown = 5; // 5 seconds
+            int messageIndex = 0;
+
+            // Create a clock to track time
+            Clock clock;
+
+            while (countdown > 0 && window.isOpen()) {
+                // Handle events to keep the window responsive
+                handleEvents();
+
+                // Check if one second has passed
+                if (clock.getElapsedTime().asSeconds() >= 1.0f) {
+                    // Reset the clock
+                    clock.restart();
+
+                    // Update the console log with the custom message
+                    updateConsoleLog(messages[messageIndex]);
+                    messageIndex++;
+
+                    // Decrement the countdown
+                    countdown--;
+
+                    // Redraw the game to display the updated console log
+                    drawGame();
+                }
+            }
+
+            // Optionally display a final message
+            updateConsoleLog("Thank you for playing!");
+
+            // Give a brief moment to display the final message
+            sleep(seconds(1));
+            drawGame();  // Draw the game state in every frame
+            // Close the window after the countdown
+            window.close();
+
+
+        }
         // Process the game input logic, but only show the input prompt once
         if (!playerCountPrompted && isWaitingForPlayerCount) {
             updateConsoleLog("Enter the number of players (2 to 8):");
@@ -59,11 +125,10 @@ void Game::run() {
         if (!inputBuffer.empty()) {
             initializeGame();
         }
-
-        drawGame();  // Draw the game state in every frame
+        drawGame();
     }
 }
-void Game::setupScenario() {
+ void Game::setupScenario1() {
     // Create 3 players
     Player& player1 = players[0];
     Player& player2 = players[1];
@@ -76,6 +141,7 @@ void Game::setupScenario() {
         player1.buyStreet(brown1);
         player1.buyStreet(brown2);
     }
+
 
     // Assign pink streets to player 2
     Street* pink1 = dynamic_cast<Street*>(board.getTile(11)); // St. Charles Place
@@ -101,32 +167,47 @@ void Game::setupScenario() {
     cout << player1.getName() << " owns the brown group." << endl;
     cout << player2.getName() << " owns the pink group." << endl;
     cout << player3.getName() << " owns the blue group." << endl;
+
+ }
+
+bool Game::gameOver() {
+    if(!isGameInitialized) {return false;}
+    for(auto player: players) {
+        if(player.getBalance() >= 5000) {
+            Logger::log(player.getName() + " WON, game over");
+            return true;
+        }
+    }
+    if(players.size() == 1) {
+        Logger::log(players[currentPlayerIndex].getName() + " WON, game over");
+        return true;
+    }
+    return false;
 }
 
-// This is a modified initializeGame() method
-// void Game::initializeGame() {
-//     // Set up the game with 3 players and predefined names
-//     vector<string> playerNames = {"Player 1", "Player 2", "Player 3"};
-//     vector<Color> colors = {Color::Red, Color::Green, Color::Blue};
-//
-//     for (int i = 0; i < playerNames.size(); ++i) {
-//         string playerName = playerNames[i];
-//
-//         // Initialize Player object
-//         Player player(playerName);
-//
-//         // Set player's graphical token
-//         CircleShape token(10.f);
-//         token.setFillColor(colors[i % colors.size()]); // Assign unique color
-//         token.setPosition(750.f, 750.f); // Starting position for all players
-//         player.setPlayerToken(token);
-//
-//         players.push_back(player);
-//     }
-// }
+
+void Game::initializeGame1() {
+    // Set up the game with 3 players and predefined names
+    vector<string> playerNames = {"Player 1", "Player 2", "Player 3"};
+    vector<Color> colors = {Color::Red, Color::Green, Color::Blue};
+
+    for (int i = 0; i < playerNames.size(); ++i) {
+        string playerName = playerNames[i];
+
+        // Initialize Player object
+        Player player(playerName);
+
+        // Set player's graphical token
+        CircleShape token(10.f);
+        token.setFillColor(colors[i % colors.size()]); // Assign unique color
+        token.setPosition(750.f, 750.f); // Starting position for all players
+        player.setPlayerToken(token);
+
+        players.push_back(player);
+    }
+ }
 
 void Game::initializeGame() {
-
     // If we're still waiting for the number of players
     if (isWaitingForPlayerCount) {
         // Only prompt once for the number of players
@@ -186,6 +267,7 @@ void Game::initializeGame() {
         if (currentPlayerInputIndex == numberOfPlayers) {
             updateConsoleLog("All players added. Starting the game!");
             isWaitingForPlayerNames = false;  // No longer waiting for player names
+            isGameInitialized = true;
         }
     }
 }
@@ -202,6 +284,7 @@ void Game::handleEvents() {
 }
 
 void Game::drawGame() {
+
     // Clear window
     window.clear(Color::White);
 
@@ -212,7 +295,7 @@ void Game::drawGame() {
     drawPlayers();
 
     // Draw houses
-    drawHousesOnTheBoard();
+    drawHousesAndHotelsOnTheBoard();
 
     // Draw UI elements
     window.draw(button);
@@ -240,10 +323,16 @@ void Game::drawGame() {
 }
 
 
-void Game::drawHousesOnTheBoard() {
+void Game::drawHousesAndHotelsOnTheBoard() {
     for(const auto& entry : housesOnTheBoard ) {
         for (const auto& house : entry.second) {
             window.draw(house);
+        }
+    }
+
+    for(const auto& entry : hotelsOnTheBoard ) {
+        for (const auto& hotel : entry.second) {
+            window.draw(hotel);
         }
     }
 }
@@ -257,11 +346,11 @@ void Game::drawPlayers() {
 }
 
 void Game::handleJailTurn(Player *player) {
-    string jailMessage = player->getName() + " is in jail! Choose an action: ";
-    jailMessage += "(1) Pay $50, (2) Roll for doubles, (3) Use 'Get Out of Jail Free' card";
+    string jailMessage1 = player->getName() + " is in jail! Choose an action: ";
+    jailMessage1 += "(1) Pay $50, (2) Use 'Get Out of Jail Free' card, (3) skip";
      // Prompt the player for input
     function jailOptions = [this, player](const string& input) {
-        int choice = std::stoi(input);
+        int choice = stoi(input);
         switch (choice) {
             case 1: // Pay $50 to get out
                 if (player->getBalance() >= 50) {
@@ -273,22 +362,7 @@ void Game::handleJailTurn(Player *player) {
                 }
                 break;
 
-            case 2: // Try rolling doubles
-                numberOfClicksOnButton = 0;
-                if (dice1Result == dice2Result) {
-                    player->releaseFromJail();
-                    updateConsoleLog(player->getName() + " rolled doubles and is out of jail!");
-                } else {
-                    player->incrementTurnsInJail();
-                    updateConsoleLog(player->getName() + " failed to roll doubles.");
-                    if (player->getTurnsInJail() >= 3) {
-                        player->releaseFromJail();
-                        updateConsoleLog(player->getName() + " is released from jail after 3 turns.");
-                    }
-                }
-                break;
-
-            case 3: // Use "Get Out of Jail Free" card
+            case 2: // Use "Get Out of Jail Free" card
                 if (player->useGetOutOfJailFreeCard()) {
                     updateConsoleLog(player->getName() + " used a 'Get Out of Jail Free' card and is out of jail!");
                 } else {
@@ -296,20 +370,18 @@ void Game::handleJailTurn(Player *player) {
                 }
                 break;
 
+            case 3:
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+                break;
+
             default:
                 updateConsoleLog("Invalid option. Please choose again.");
                 handleJailTurn(player); // Re-prompt for valid input
-                return;
-        }
-
-        // End the player's turn if they are still in jail after 3 turns.
-        if (!player->isInJail()) {
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
         }
     };
 
     // Show the jail options and wait for input
-    waitForInput(jailOptions, jailMessage);
+    waitForInput(jailOptions, jailMessage1);
 }
 
 void Game::addButton(const string& label, float x, float y, float width, float height) {
@@ -387,13 +459,16 @@ void Game::handleKeyPress(Event& event) {
             dice2Result = 0;
             numberOfClicksOnButton = 0;
         }
-        else if (event.key.code == Keyboard::Space) {
-            cout << players[currentPlayerIndex].getName() << " ," << players[currentPlayerIndex].getPosition() << endl;
-        }
+
         // Build a house with 'B'
         else if (event.key.code == Keyboard::B) {
             Vector2i mousePosition = Mouse::getPosition(window);
             handleBuildingHouse(mousePosition);
+        }
+
+        else if (event.key.code == Keyboard::H) {
+            Vector2i mousePosition = Mouse::getPosition(window);
+            handleBuildingHotel(mousePosition);
         }
     }
 }
@@ -417,17 +492,28 @@ void Game::handleMousePress(Event& event) {
             diceText2.setString("Dice 2: " + to_string(dice2));
 
             players[currentPlayerIndex].move(dice1Result + dice2Result);
-            if(players[currentPlayerIndex].getPosition() == 10){currentPlayerIndex = (currentPlayerIndex + 1) % players.size();}
 
         } else if (monopolyBounds.contains(static_cast<float>(mousePosition.x), static_cast<float>(mousePosition.y)) ){
             // Move the current player
             movePlayer();
         }
     }
-    else if(event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Right) {
+}
 
+
+void Game::removePlayer(Player* player) {
+
+    // Log that the player has been removed
+    updateConsoleLog(player->getName() + " has been removed from the game.");
+    players.erase(remove(players.begin(), players.end(), player));
+
+    // Adjust the current player index if needed
+    if (currentPlayerIndex >= players.size()) {
+        currentPlayerIndex = 0;
     }
 }
+
+
 
 void Game::drawPlayerInfo() {
     float baseYPosition = 820.f; // Starting Y position for player names and tokens
@@ -442,11 +528,13 @@ void Game::drawPlayerInfo() {
         float currentXOffset = (i < playersPerColumn) ? xOffset : xOffsetRight;
         float currentYPosition = baseYPosition + (i % playersPerColumn) * (tokenSize + 20.f);
 
-        // Draw player token (a small circle)
-        CircleShape playerToken(tokenSize / 2);
-        playerToken.setFillColor(players[i].getPlayerToken().getFillColor());
-        playerToken.setPosition(currentXOffset, currentYPosition);
-        window.draw(playerToken);
+        // Draw player token (only if they haven't lost)
+        if (players[i].getName().find("(Lost)") == string::npos) {
+            CircleShape playerToken(tokenSize / 2);
+            playerToken.setFillColor(players[i].getPlayerToken().getFillColor());
+            playerToken.setPosition(currentXOffset, currentYPosition);
+            window.draw(playerToken);
+        }
 
 
         string playerInfo = players[i].getName() +
@@ -464,6 +552,8 @@ void Game::drawPlayerInfo() {
     }
 
 }
+
+
 
 void Game::drawCurrentPlayerTurn() {
     float rightXPosition = 800.f; // Position on the right side of the board
@@ -491,6 +581,7 @@ void Game::handlePlayerLanding(Player *player) {
         handleJailTurn(player);
         return; // Skip the rest of the logic since the player is in jail.
     }
+
 
     Tile* currTile = board.getTile(player->getPosition());
 
@@ -543,34 +634,133 @@ void Game::printMousePosition() {
 }
 
 void Game::handleBuildingHouse(Vector2i mousePosition) {
-    int position;
-    cout << "choose the street position : ";
-    cin >> position;
-    Tile* tile = board.getTile(position);
-    if(dynamic_cast<Street*>(tile)) {
-        Street* street = dynamic_cast<Street*>(tile);
-        Player currPlayer = players[currentPlayerIndex];
-        if(currPlayer.buildHouse(street)) {
-            // Convert mouse position to the window coordinates
-            Vector2f mousePositionFloat(static_cast<float>(mousePosition.x), static_cast<float>(mousePosition.y));
+    string outPut = "Choose the street position: ";
 
-            // Create a small square to represent the house
-            RectangleShape houseShape(Vector2f(10.f, 10.f)); // 15x15 square
-            houseShape.setFillColor(players[currentPlayerIndex].getPlayerToken().getFillColor()); // Use the player's token color
-            houseShape.setPosition(mousePositionFloat);
+    function<void(const string&)> promptPlayer;
 
-            housesOnTheBoard[players[currentPlayerIndex].getName()].push_back(houseShape);
+    // Define the callback for the player's input
+    promptPlayer = [this, mousePosition](const string& input) {
+        int position;
 
-            // Output the action for confirmation
-            cout << "House built at (" << mousePositionFloat.x << ", " << mousePositionFloat.y << ") by " << players[currentPlayerIndex].getName() << endl;
+        try {
+            position = stoi(input);  // Convert input to an integer position
+        } catch (...) {
+            Logger::log("Invalid input. Please enter a valid position.");
+            return;
         }
 
-    }
+        Tile* tile = board.getTile(position);
+
+        if (dynamic_cast<Street*>(tile)) {
+            Street* currStreet = dynamic_cast<Street*>(tile);
+            Player& currPlayer = players[currentPlayerIndex];
+            int numHouses = currStreet->getHouses();
+
+            if(numHouses >= 1) {
+                int minHouses = 4;
+                // Loop through streets and find the min/max house counts
+                for (const auto &street : currPlayer.getStreets()) {;
+                    if (street->getColor() == currStreet->getColor()) {
+                        int numHouses = street->getHouses();
+                        minHouses = min(minHouses, numHouses);
+                    }
+                }
+                if(numHouses - minHouses == 1) {
+                    Logger::log("You must build evenly across all streets in the " + currStreet->getColor() + " group.");
+                    return;
+                }
+            }
+
+            if (currPlayer.buildHouse(currStreet)) {
+                // Convert mouse position to window coordinates
+                Vector2f mousePositionFloat(static_cast<float>(mousePosition.x), static_cast<float>(mousePosition.y));
+
+                // Create a small square to represent the house
+                RectangleShape houseShape(Vector2f(10.f, 10.f));  // 15x15 square
+                houseShape.setFillColor(currPlayer.getPlayerToken().getFillColor());  // Use the player's token color
+                houseShape.setPosition(mousePositionFloat);
+
+                housesOnTheBoard[currPlayer.getName()].push_back(houseShape);
+
+                // Log the action for confirmation
+                string logMessage = "House built at ("  + to_string(position) +
+                                    ") by " + currPlayer.getName();
+                Logger::log(logMessage);
+            } else {
+                Logger::log("Cannot build house on this street.");
+            }
+        } else {
+            Logger::log("Invalid street position.");
+            handleBuildingHouse(mousePosition);  // Re-prompt if the position is not a street
+        }
+    };
+
+    // Use waitForInput to prompt the player
+    Game::getInstance()->waitForInput(promptPlayer, outPut);
 }
+
+void Game::handleBuildingHotel(Vector2i mousePosition) {
+    string outPut = "Choose the street position to build a hotel: ";
+
+    function<void(const string&)> promptPlayer;
+
+    // Define the callback for the player's input
+    promptPlayer = [this, mousePosition](const string& input) {
+        int position;
+
+        try {
+            position = stoi(input);  // Convert input to an integer position
+        } catch (...) {
+            Logger::log("Invalid input. Please enter a valid position.");
+            return;
+        }
+
+        Tile* tile = board.getTile(position);
+
+        if (dynamic_cast<Street*>(tile)) {
+            Street* currStreet = dynamic_cast<Street*>(tile);
+            Player& currPlayer = players[currentPlayerIndex];
+
+            // Ensure the player owns all streets in the group and can build a hotel
+            if (currPlayer.canBuildHotelOnGroup(currStreet)) {
+                if (currPlayer.buildHotel(currStreet)) {
+                    // Convert mouse position to window coordinates
+                    Vector2f mousePositionFloat(static_cast<float>(mousePosition.x), static_cast<float>(mousePosition.y));
+
+                    // Create a triangle shape to represent the hotel
+                    ConvexShape hotelShape;
+                    hotelShape.setPointCount(3);  // A triangle has 3 points
+                    hotelShape.setPoint(0, Vector2f(5.f, 0.f));  // Top point
+                    hotelShape.setPoint(1, Vector2f(0.f, 10.f));  // Bottom-left point
+                    hotelShape.setPoint(2, Vector2f(10.f, 10.f));  // Bottom-right point
+                    hotelShape.setFillColor(currPlayer.getPlayerToken().getFillColor());  // Use the player's token color
+                    hotelShape.setPosition(mousePositionFloat);
+
+                    hotelsOnTheBoard[currPlayer.getName()].push_back(hotelShape);  // Add the hotel to the board
+
+                    // Log the action for confirmation
+                    string logMessage = "Hotel built at (" + to_string(position) + ") by " + currPlayer.getName();
+                    Logger::log(logMessage);
+                } else {
+                    Logger::log("Cannot build a hotel on this street.");
+                }
+            } else {
+                Logger::log("You must own all streets in the " + currStreet->getColor() + " group and have 4 houses on each street to build a hotel.");
+            }
+        } else {
+            Logger::log("Invalid street position.");
+            handleBuildingHotel(mousePosition);  // Re-prompt if the position is not a street
+        }
+    };
+
+    // Use waitForInput to prompt the player
+    Game::getInstance()->waitForInput(promptPlayer, outPut);
+}
+
 
 void Game::initializeTextInputAndConsoleLog() {
     // Initialize text input bar
-    textBar.setSize(Vector2f(600, 50));  // Adjust size
+    textBar.setSize(Vector2f(640, 50));  // Adjust size
     textBar.setFillColor(Color::Black);
     textBar.setPosition(850, 850);  // Place below the game board
 
@@ -580,7 +770,7 @@ void Game::initializeTextInputAndConsoleLog() {
     inputText.setPosition(860, 860);  // Inside the textBar
 
     // Initialize console log area
-    consoleBar.setSize(Vector2f(600, 300));  // Adjust width and height
+    consoleBar.setSize(Vector2f(640, 300));  // Adjust width and height
     consoleBar.setFillColor(Color(100, 100, 100));  // Dark gray for console background
     consoleBar.setPosition(850, 500);  // Placed at the side of the board
 }
@@ -648,7 +838,6 @@ void Game::updateConsoleLog(const string &message) {
     consoleLog.push_back(logEntry);
 }
 
-
 void Game::processInput(const string& input) {
     if (waitingForInput && inputCallback) {
         auto callback = inputCallback;  // Copy the callback
@@ -666,3 +855,4 @@ void Game::waitForInput(function<void(const string&)> callback, const string& pr
     updateConsoleLog(prompt);
     inputBuffer.clear();
 }
+

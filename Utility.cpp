@@ -60,10 +60,8 @@ void Utility::onLand(Player *player) {
 
     } else if (this->owner != player) {
         int rent = getRent(getDiceRoll());  // Calculate rent based on dice roll
-        player->decreaseBalance(rent);
-        this->owner->increaseBalance(rent);
-        Logger::log(player->getName() + " paid $" + to_string(rent) +
-                    " to " + getOwner()->getName() + " as rent.");
+        player->payRent(rent,owner);
+
     } else {
         // Player landed on their own utility
         Logger::log(player->getName() + " landed on their own utility.");

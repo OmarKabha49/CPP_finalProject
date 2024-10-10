@@ -28,14 +28,19 @@ private:
     int position;
     int doubleRollCount;
     int housesNum;
-    int hotelNum;
+    int hotelsNum;
     CircleShape playerToken;
+    CircleShape ownershipMarker;
     unordered_map<Street*, CircleShape> _streets;
     unordered_map<Utility*, CircleShape> _utilityies;
     unordered_map<Train*, CircleShape> _trains;
+    int loanAmount;         // Amount of loan taken
+    int goPassCount;        // Number of times the player has passed "Go" since taking a loan
+    bool hasLoan;           // Whether the player currently has a loan
+
 
 public:
-    Player(const string name);
+    Player(string name);
 
     // Getters
     const string& getName() const;
@@ -48,43 +53,55 @@ public:
     const CircleShape& getPlayerToken() const;
 
     // Other Methods
+    void setName(const string& newName);
     void decreaseBalance(int amount);
     void increaseBalance(int amount);
     void goToJail();
-    void payRent(int amount, Player* owner);
+    bool payRent(int amount, Player* owner);
     void buyStreet(Street* street);
     void buyTrain(Train* train);
     void buyUtility(Utility* utility);
     void move(int steps);
     void setPosition(float x, float y);
     void setPlayerToken(const CircleShape& token);
-
     void releaseFromJail();
     void incrementTurnsInJail();
     int getTurnsInJail() const;
     bool isInJail() const;
     Vector2f getTileScreenPosition(int tilePosition) const;
     void drawOwnerships(RenderWindow& window) const;
+    void removePlayerToken();
 
     bool buildHouse(Street* street);
     bool canBuildHouseOnGroup(const string& colorGroup) const;
     bool ownsAllTheStreetsInSameColor(const string& colorGroup) const;
+
+    bool canBuildHotelOnGroup(Street* street) const;
+    bool buildHotel(Street* street);
+
 
     void resetDoubleRollCount();
     void incrementDoubleRollCount();
     int getDoubleRollCount() const;
     bool useGetOutOfJailFreeCard();
 
-    int getHousesNume();
+    int getHousesNum();
     int getHotelesNum();
 
     void repairProperties(int perHouse, int perHotel);
     void increasGetOutOfJailFreeCard();
 
-    bool operator==(Player& other) const {
-        return this->playerName == other.playerName;
+    void takeLoan(int amount);
+    bool repayLoan();
+
+    void passGo();  // To increment goPassCount and check loan repayment
+    void transferPropertiesToPlayer(Player* newOwner);
+
+    unordered_map<Street*, CircleShape> _getStreets();
+    bool operator==(const Player* other) const {
+        return this->playerName == other->playerName;
     }
-    bool operator!=(Player& other) const {
+    bool operator!=(const Player* other) const {
         return !(*this == other);
     }
 };
